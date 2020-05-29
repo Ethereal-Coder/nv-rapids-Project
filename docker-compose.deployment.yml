@@ -1,0 +1,12 @@
+version: '2.3'
+services:
+  lab:
+    image: c-ds-02-v1-task3:production
+  nginx:
+    ports:
+    - 80:80
+  s3_data_loader:
+    volumes:
+    - $HOME/.aws/credentials:/root/.aws/credentials:ro
+    - ./task/data_sources:/var/data_sources
+    - ./task/data:/data

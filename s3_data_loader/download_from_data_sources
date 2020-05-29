@@ -1,0 +1,33 @@
+#! /bin/sh
+
+DATA_SOURCES_FILE="/var/data_sources" # This file is mounted into the container during runtime
+DATA_DESTINATION="/data" # This is the directory of the shared data directory defined at runtime
+
+while read S3_URL; do
+
+  TO_DOWNLOAD=`echo $S3_URL | awk -F '/' '{ print $NF }'` # Get just the filename or dirname from the S3 URL
+  FIRST_FIELD=`echo $S3_URL | awk '{ print $1 }'` # First field might indicate recursive flag needs setting
+  RECURSIVE=false # Set this flag back to default value for each line in the file
+
+  if [ $FIRST_FIELD = "--recursive" ]; then # Indicates we want to download a dir
+    RECURSIVE=true
+    S3_URL=`echo $S3_URL | cut -d " " -f2-` # Remove the recursive flag, leave just the url
+  fi
+
+  if [ ! -f $DATA_DESTINATION/$TO_DOWNLOAD ]; then # Only download if the file is not yet present
+
+    echo "Downloading $TO_DOWNLOAD from $S3_URL."
+
+    if [ $RECURSIVE = true ]; then
+      aws s3 cp --recursive $S3_URL $DATA_DESTINATION
+    else
+      aws s3 cp $S3_URL $DATA_DESTINATION
+    fi
+
+  else
+
+    echo "$TO_DOWNLOAD already exists locally, not downloading."
+
+  fi
+
+done < $DATA_SOURCES_FILE
